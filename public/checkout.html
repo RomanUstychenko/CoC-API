@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Checkout | CheckoutChamp Funnel</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="container">
+      <h1>Checkout</h1>
+      <nav>
+        <a href="/products.html">Back to Products</a>
+      </nav>
+    </header>
+    <main class="container">
+      <form id="checkoutForm" novalidate>
+        <div class="grid-2">
+          <div>
+            <h2>Contact</h2>
+            <label>Email
+              <input type="email" id="emailAddress" name="emailAddress" required />
+              <span class="hint" id="emailError"></span>
+            </label>
+            <label>Phone
+              <input type="tel" id="phoneNumber" name="phoneNumber" />
+            </label>
+
+            <h2>Billing</h2>
+            <div class="grid-2">
+              <label>First name
+                <input type="text" id="firstName" name="firstName" required />
+                <span class="hint" id="firstNameError"></span>
+              </label>
+              <label>Last name
+                <input type="text" id="lastName" name="lastName" required />
+                <span class="hint" id="lastNameError"></span>
+              </label>
+            </div>
+
+            <label>Country
+              <select id="country" name="country" required></select>
+              <span class="hint" id="countryError"></span>
+            </label>
+
+            <label>Address
+              <input type="text" id="address1" name="address1" placeholder="Start typing your address" required autocomplete="off" />
+              <span class="hint" id="address1Error"></span>
+            </label>
+            <div class="grid-3">
+              <label>City
+                <input type="text" id="city" name="city" required />
+                <span class="hint" id="cityError"></span>
+              </label>
+              <label>State
+                <input type="text" id="state" name="state" required />
+                <span class="hint" id="stateError"></span>
+              </label>
+              <label>ZIP
+                <input type="text" id="postalCode" name="postalCode" required />
+                <span class="hint" id="postalCodeError"></span>
+              </label>
+            </div>
+
+            <div id="mapContainer" class="map-container" style="display:none;">
+              <div id="map"></div>
+            </div>
+          </div>
+
+          <div>
+            <h2>Payment</h2>
+            <label>Card number
+              <input type="text" id="cardNumber" name="cardNumber" inputmode="numeric" required maxlength="19" placeholder="1234 5678 9012 3456" />
+              <span class="hint" id="cardNumberError"></span>
+            </label>
+            <div class="grid-3">
+              <label>MM
+                <input type="text" id="cardMonth" name="cardMonth" inputmode="numeric" maxlength="2" required />
+                <span class="hint" id="cardMonthError"></span>
+              </label>
+              <label>YY
+                <input type="text" id="cardYear" name="cardYear" inputmode="numeric" maxlength="2" required />
+                <span class="hint" id="cardYearError"></span>
+              </label>
+              <label>CVV
+                <input type="text" id="cardSecurityCode" name="cardSecurityCode" inputmode="numeric" maxlength="4" required />
+                <span class="hint" id="cardSecurityCodeError"></span>
+              </label>
+            </div>
+
+            <input type="hidden" id="product1_id" name="product1_id" />
+            <input type="hidden" id="latitude" name="latitude" />
+            <input type="hidden" id="longitude" name="longitude" />
+
+            <button type="submit" class="btn">Pay Now</button>
+          </div>
+        </div>
+      </form>
+
+      <div id="modal" class="modal hidden">
+        <div class="modal-content">
+          <div id="modalMessage"></div>
+          <button id="closeModal" class="btn">Close</button>
+        </div>
+      </div>
+    </main>
+
+    <footer class="container small">© <span id="year"></span> CheckoutChamp Funnel</footer>
+    <script>
+      document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
+    <script type="module" src="/js/checkout.js"></script>
+  </body>
+  </html>
+
+

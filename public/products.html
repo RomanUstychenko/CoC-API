@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Products | CheckoutChamp Funnel</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="container">
+      <h1>Products</h1>
+      <nav>
+        <a href="/">Home</a>
+      </nav>
+    </header>
+    <main class="container">
+      <section id="products" class="grid"></section>
+      <div id="error" class="error"></div>
+    </main>
+    <footer class="container small">© <span id="year"></span> CheckoutChamp Funnel</footer>
+    <script>
+      console.log('Products page loaded');
+      document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
+    <script>
+      async function fetchProducts() {
+        const grid = document.getElementById('products');
+        const errorDiv = document.getElementById('error');
+        errorDiv.textContent = '';
+        grid.innerHTML = '<p>Loading products...</p>';
+        try {
+          const res = await fetch('/api/products');
+          const data = await res.json();
+          if (data.result !== 'SUCCESS') {
+            throw new Error(data.message || 'Failed to load products');
+          }
+          const products = data.message.products || [];
+          if (!products.length) {
+            grid.innerHTML = '<p>No products found.</p>';
+            return;
+          }
+          grid.innerHTML = products.map(p => `
+            <article class="card">
+              <img src="${(p.imagePaths && p.imagePaths[0]) || p.productImagePath || ''}" alt="${p.productName}" />
+              <div class="card-body">
+                <h3>${p.productName}</h3>
+                <p>${p.productDescription || ''}</p>
+                <p><strong>${p.currencySymbol || '$'}${p.price}</strong></p>
+                <a class="btn" href="/checkout.html?productId=${encodeURIComponent(p.productId)}">Buy Now</a>
+              </div>
+            </article>
+          `).join('');
+        } catch (err) {
+          grid.innerHTML = '';
+          errorDiv.textContent = err.message || 'Something went wrong';
+        }
+      }
+      fetchProducts();
+    </script>
+  </body>
+  </html>
+
+
