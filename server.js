@@ -29,6 +29,7 @@ const CHECKOUTCHAMP_LOGIN = process.env.CHECKOUTCHAMP_LOGIN_ID || '';
 const CHECKOUTCHAMP_PASSWORD = process.env.CHECKOUTCHAMP_PASSWORD || '';
 const CHECKOUTCHAMP_CAMPAIGN_ID = process.env.CHECKOUTCHAMP_CAMPAIGN_ID || '';
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || '';
+const GOOGLE_MAPS_MAP_ID = process.env.GOOGLE_MAPS_MAP_ID || '';
 
 // Serve static frontend
 app.use(express.static(path.join(__dirname, 'public')));
@@ -49,7 +50,7 @@ app.get('/api/maps-key', (req, res) => {
   if (!GOOGLE_MAPS_API_KEY) {
     return res.status(404).json({ result: 'ERROR', message: 'Google Maps API key not configured' });
   }
-  res.json({ result: 'SUCCESS', message: { key: GOOGLE_MAPS_API_KEY } });
+  res.json({ result: 'SUCCESS', message: { key: GOOGLE_MAPS_API_KEY, mapId: GOOGLE_MAPS_MAP_ID || undefined } });
 });
 
 // Helper for CheckoutChamp POST requests
@@ -96,15 +97,39 @@ app.get('/api/products', async (req, res) => {
 // Lead (partial lead before payment)
 app.post('/api/lead', async (req, res) => {
   try {
-    const { firstName, lastName, emailAddress, product1_id } = req.body || {};
-    const payload = {
+    const { leadId, firstName, lastName, emailAddress, product1_id } = req.body || {};
+
+    if (leadId) {
+      // Update existing partial lead (order)
+      const payload = {
+        orderId: leadId,
+        firstName,
+        lastName,
+        emailAddress,
+        product1_id
+      };
+      const data = await postToCheckoutChamp('/order/update/', payload);
+      if (data?.result === 'SUCCESS') {
+        return res.json({ result: 'SUCCESS', message: { orderId: leadId } });
+      }
+      const errorText = typeof data?.message === 'string' ? data.message : 'Failed to update partial lead';
+      return res.status(400).json({ result: 'ERROR', message: errorText });
+    }
+
+    // Create new partial lead
+    const createPayload = {
       firstName,
       lastName,
       emailAddress,
       product1_id
     };
-    const data = await postToCheckoutChamp('/leads/import/', payload);
-    res.json(data);
+    const createRes = await postToCheckoutChamp('/leads/import/', createPayload);
+    if (createRes?.result === 'SUCCESS') {
+      const msg = createRes?.message || {};
+      return res.json({ result: 'SUCCESS', message: { orderId: msg.orderId } });
+    }
+    const errorText = typeof createRes?.message === 'string' ? createRes.message : 'Failed to create partial lead';
+    return res.status(400).json({ result: 'ERROR', message: errorText });
   } catch (error) {
     const errorMessage = error?.response?.data || error.message;
     res.status(500).json({ result: 'ERROR', message: errorMessage });

@@ -10,6 +10,7 @@ let placeElementInstance = null; // new PlaceAutocompleteElement or web componen
 let mapInstance = null;
 let markerInstance = null;
 let mapsScriptLoaded = false;
+let mapIdConfigured = '';
 
 function ensureMapsScript(apiKey) {
   return new Promise((resolve, reject) => {
@@ -156,13 +157,18 @@ function updateAutocompleteCountry(google, countryCode) {
   }
 }
 
-function initMap(google) {
+function initMap(google, providedMapId) {
   const container = document.getElementById('mapContainer');
   const mapDiv = document.getElementById('map');
   if (!container || !mapDiv) return;
   container.style.display = '';
   const center = { lat: 37.7749, lng: -122.4194 };
-  mapInstance = new google.maps.Map(mapDiv, { center, zoom: 10, disableDefaultUI: true });
+  const attrMapId = mapDiv?.dataset?.mapId || mapDiv?.getAttribute('data-map-id') || '';
+  const chosenMapId = providedMapId || attrMapId || '';
+  mapIdConfigured = chosenMapId;
+  const options = { center, zoom: 10, disableDefaultUI: true };
+  if (chosenMapId) options.mapId = chosenMapId;
+  mapInstance = new google.maps.Map(mapDiv, options);
   mapInstance.addListener('click', (e) => {
     const latLng = { lat: e.latLng.lat(), lng: e.latLng.lng() };
     setMarker(latLng);
@@ -176,10 +182,23 @@ function initMap(google) {
 function setMarker(position) {
   if (!mapInstance) return;
   if (markerInstance) {
-    markerInstance.setMap(null);
+    if (typeof markerInstance.setMap === 'function') {
+      markerInstance.setMap(null);
+    } else {
+      try { markerInstance.map = null; } catch(_) {}
+    }
     markerInstance = null;
   }
-  markerInstance = new google.maps.Marker({ map: mapInstance, position });
+  try {
+    const AdvancedMarkerElement = google?.maps?.marker?.AdvancedMarkerElement;
+    if (AdvancedMarkerElement && mapIdConfigured) {
+      markerInstance = new AdvancedMarkerElement({ map: mapInstance, position });
+    } else {
+      markerInstance = new google.maps.Marker({ map: mapInstance, position });
+    }
+  } catch (_) {
+    markerInstance = new google.maps.Marker({ map: mapInstance, position });
+  }
 }
 
 async function setupAddressAutocomplete({ countrySelectId = 'country', enableMap = true } = {}) {
@@ -187,6 +206,7 @@ async function setupAddressAutocomplete({ countrySelectId = 'country', enableMap
   const keyRes = await fetch('/api/maps-key');
   const keyData = await keyRes.json();
   const apiKey = keyData?.message?.key;
+  const mapIdFromApi = keyData?.message?.mapId;
   const selectedCountryCode = document.getElementById(countrySelectId)?.value;
   if (!apiKey) return; // gracefully skip maps
   await ensureMapsScript(apiKey);
@@ -194,13 +214,16 @@ async function setupAddressAutocomplete({ countrySelectId = 'country', enableMap
   // Ensure places library is loaded (new loader)
   if (google?.maps?.importLibrary) {
     try { await google.maps.importLibrary('places'); } catch(_) {}
+    if (enableMap) {
+      try { await google.maps.importLibrary('marker'); } catch(_) {}
+    }
   }
   // Try new PlaceAutocompleteElement first, fallback to legacy Autocomplete
   const initializedNew = initPlaceAutocompleteElement(google, selectedCountryCode);
   if (!initializedNew) {
     initLegacyAutocomplete(google, selectedCountryCode);
   }
-  if (enableMap) initMap(google);
+  if (enableMap) initMap(google, mapIdFromApi);
 
   const countrySelect = document.getElementById(countrySelectId);
   if (countrySelect) {

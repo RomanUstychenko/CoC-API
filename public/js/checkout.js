@@ -67,20 +67,46 @@ import { setupAddressAutocomplete } from '/js/maps.js';
   el('cardYear').addEventListener('input', (e) => { e.target.value = numericOnly(e.target.value).slice(0,2); });
   el('cardSecurityCode').addEventListener('input', (e) => { e.target.value = numericOnly(e.target.value).slice(0,4); });
 
-  // Partial lead after minimal fields
-  function trySendLead() {
-    const firstName = el('firstName').value.trim();
-    const lastName = el('lastName').value.trim();
-    const emailAddress = el('emailAddress').value.trim();
-    const product1_id = el('product1_id').value;
-    if (firstName && lastName && validateEmail(emailAddress).valid && product1_id) {
-      fetch('/api/lead', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ firstName, lastName, emailAddress, product1_id })
-      }).catch(()=>{});
-    }
+  // Partial lead create/update with debounce (500ms)
+  let leadDebounceTimer = null;
+  function getMinimumLeadFields() {
+    return {
+      firstName: el('firstName').value.trim(),
+      lastName: el('lastName').value.trim(),
+      emailAddress: el('emailAddress').value.trim(),
+      product1_id: el('product1_id').value
+    };
   }
-  ['firstName','lastName','emailAddress'].forEach(id => el(id).addEventListener('blur', trySendLead));
+  function minimumFieldsValid({ firstName, lastName, emailAddress, product1_id }) {
+    return Boolean(firstName && lastName && product1_id && validateEmail(emailAddress).valid);
+  }
+  function schedulePartialLeadSync() {
+    if (leadDebounceTimer) clearTimeout(leadDebounceTimer);
+    leadDebounceTimer = setTimeout(async () => {
+      const fields = getMinimumLeadFields();
+      if (!minimumFieldsValid(fields)) return;
+      const leadId = sessionStorage.getItem('partialLeadId') || undefined;
+      try {
+        const res = await fetch('/api/lead', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...fields, leadId })
+        });
+        const data = await res.json();
+        if (data?.result === 'SUCCESS') {
+          const newId = data?.message?.orderId;
+          if (newId) sessionStorage.setItem('partialLeadId', newId);
+        }
+      } catch (_) {
+        // ignore errors for background lead sync
+      }
+    }, 500);
+  }
+  ['firstName','lastName','emailAddress','product1_id'].forEach(id => {
+    const input = el(id);
+    if (input) input.addEventListener('input', schedulePartialLeadSync);
+    if (input) input.addEventListener('blur', schedulePartialLeadSync);
+  });
 
   function showModal(messageHtml) {
     modalMessage.innerHTML = messageHtml;
