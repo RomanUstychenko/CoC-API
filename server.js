@@ -62,6 +62,7 @@ async function postToCheckoutChamp(endpointPath, params) {
     campaignId: CHECKOUTCHAMP_CAMPAIGN_ID,
     ...params
   };
+  console.log("payload", payload)
   const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
   const data = qs.stringify(payload);
   const response = await axios.post(url, data, { headers, timeout: 20000 });
@@ -86,6 +87,7 @@ app.get('/api/countries', async (req, res) => {
 app.get('/api/products', async (req, res) => {
   try {
     const data = await postToCheckoutChamp('/product/query/', { productType: 'OFFER' });
+    console.log("data", data)
     const products = data?.message?.data || [];
     res.json({ result: 'SUCCESS', message: { products } });
   } catch (error) {
