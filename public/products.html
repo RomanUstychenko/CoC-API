@@ -19,7 +19,7 @@
     </main>
     <footer class="container small">© <span id="year"></span> CheckoutChamp Funnel</footer>
     <script>
-      console.log('Products page loaded');
+      console.log('Products page loaded start');
       document.getElementById('year').textContent = new Date().getFullYear();
     </script>
     <script>
@@ -31,6 +31,7 @@
         try {
           const res = await fetch('/api/products');
           const data = await res.json();
+          console.log("data", data)
           if (data.result !== 'SUCCESS') {
             throw new Error(data.message || 'Failed to load products');
           }

@@ -85,6 +85,7 @@ app.get('/api/countries', async (req, res) => {
 
 // Products
 app.get('/api/products', async (req, res) => {
+  console.log("run product")
   try {
     const data = await postToCheckoutChamp('/product/query/', { productType: 'OFFER' });
     console.log("data", data)
